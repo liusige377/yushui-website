@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日壁纸 - 渔水</title>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--gold:#d4a843;--white:#f0f6fc;--text:#c9d1d9;--text2:#8b949e;--font:"PingFang SC","Microsoft YaHei",sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+.back-bar{padding:16px 20px}
+.back-bar a{color:var(--gold);text-decoration:none;font-size:0.9rem}
+.page-header{text-align:center;padding:10px 20px 30px}
+.page-header h1{font-size:clamp(1.5rem,4vw,2rem);color:var(--white);margin-bottom:6px}
+.page-header h1 span{color:var(--gold)}
+.page-header p{color:var(--text2);font-size:0.9rem}
+.wall-container{max-width:960px;margin:0 auto;padding:0 20px 50px}
+.cat-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px;flex-wrap:wrap}
+.cat-btn{padding:7px 16px;background:var(--bg2);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:var(--text2);font-size:0.85rem;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s}
+.cat-btn.active{background:var(--gold);color:#1a1000;font-weight:600;border-color:var(--gold)}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.photo-card{border-radius:12px;overflow:hidden;background:var(--bg2);position:relative;aspect-ratio:16/10;cursor:pointer}
+.photo-card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.photo-card:hover img{transform:scale(1.03)}
+.photo-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7)0%,transparent 50%);opacity:0;transition:opacity .2s;display:flex;align-items:flex-end;padding:14px}
+.photo-card:hover .photo-overlay{opacity:1}
+.photo-overlay span{color:white;font-size:0.85rem}
+.photo-dl-btn{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:6px;padding:5px 10px;font-size:0.75rem;cursor:pointer;opacity:0;transition:opacity .2s;font-family:inherit}
+.photo-card:hover .photo-dl-btn{opacity:1}
+.photo-dl-btn:hover{background:var(--gold);color:#1a1000}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+.modal.show{display:flex}
+.modal img{max-width:100%;max-height:75vh;border-radius:8px;object-fit:contain}
+.modal-btns{margin-top:16px;display:flex;gap:12px}
+.modal-btn{padding:10px 24px;border-radius:8px;font-size:0.95rem;cursor:pointer;font-family:inherit;border:none}
+.modal-btn.primary{background:var(--gold);color:#1a1000;font-weight:600}
+.modal-btn.secondary{background:var(--bg3);color:var(--text);border:1px solid rgba(255,255,255,0.1)}
+.modal-close{position:absolute;top:20px;right:20px;color:white;font-size:2rem;cursor:pointer;opacity:0.7}
+.loading{text-align:center;padding:40px;color:var(--text2)}
+.disclaimer{margin-top:20px;padding:14px;background:rgba(255,255,255,0.03);border-radius:10px;color:var(--text2);font-size:0.78rem}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="../index.html">&#x2190; 回到首页</a></div>
+<div class="page-header">
+  <h1><span>&#x1F5BC;</span> 今日壁纸</h1>
+  <p id="dateText">每日精选高清壁纸，点击下载设为桌面背景</p>
+</div>
+<div class="wall-container">
+  <div class="cat-bar">
+    <button class="cat-btn active" onclick="filterCat('all',this)">全部</button>
+    <button class="cat-btn" onclick="filterCat('nature',this)">&#x1F33F; 自然风光</button>
+    <button class="cat-btn" onclick="filterCat('city',this)">&#x1F3D9; 城市建筑</button>
+    <button class="cat-btn" onclick="filterCat('abstract',this)">&#x2728; 抽象艺术</button>
+    <button class="cat-btn" onclick="filterCat('animal',this)">&#x1F43E; 萌宠动物</button>
+    <button class="cat-btn" onclick="filterCat('space',this)">&#x1F680; 宇宙星空</button>
+    <button class="cat-btn" onclick="filterCat('minimal',this)">&#x1F5A4; 简约黑白</button>
+  </div>
+  <div class="photo-grid" id="photoGrid"><div class="loading">壁纸加载中...</div></div>
+  <div class="disclaimer">&#x26A0; 图片来源于 picsum.photos，免费用于个人桌面壁纸用途。</div>
+</div>
+<div class="modal" id="imgModal">
+  <div class="modal-close" onclick="closeModal()">&#xD7;</div>
+  <img id="modalImg" src="" alt="">
+  <div class="modal-btns"><button class="modal-btn primary" onclick="downloadImg()">&#x2B07; 下载壁纸</button><button class="modal-btn secondary" onclick="closeModal()">关闭</button></div>
+</div>
+<script>
+var photos=[
+  {url:"https://picsum.photos/seed/yushuin1/800/500",cat:"nature",title:"自然风光"},
+  {url:"https://picsum.photos/seed/yushuin2/800/500",cat:"nature",title:"山川湖泊"},
+  {url:"https://picsum.photos/seed/yushuin3/800/500",cat:"nature",title:"海岸线"},
+  {url:"https://picsum.photos/seed/yushuic1/800/500",cat:"city",title:"城市夜景"},
+  {url:"https://picsum.photos/seed/yushuic2/800/500",cat:"city",title:"天际线"},
+  {url:"https://picsum.photos/seed/yushuic3/800/500",cat:"city",title:"街景小路"},
+  {url:"https://picsum.photos/seed/yushuia1/800/500",cat:"abstract",title:"色彩渐变"},
+  {url:"https://picsum.photos/seed/yushuia2/800/500",cat:"abstract",title:"几何光影"},
+  {url:"https://picsum.photos/seed/yushuia3/800/500",cat:"abstract",title:"水彩质感"},
+  {url:"https://picsum.photos/seed/yushuid1/800/500",cat:"animal",title:"萌宠猫咪"},
+  {url:"https://picsum.photos/seed/yushuid2/800/500",cat:"animal",title:"可爱狗狗"},
+  {url:"https://picsum.photos/seed/yushuis1/800/500",cat:"space",title:"银河星辰"},
+  {url:"https://picsum.photos/seed/yushuis2/800/500",cat:"space",title:"宇宙星云"},
+  {url:"https://picsum.photos/seed/yushum1/800/500",cat:"minimal",title:"简约几何"},
+  {url:"https://picsum.photos/seed/yushum2/800/500",cat:"minimal",title:"极简风格"},
+  {url:"https://picsum.photos/seed/yushum3/800/500",cat:"minimal",title:"黑白线条"},
+];
+function renderPhotos(filter){
+  var grid=document.getElementById("photoGrid");
+  var list=filter==="all"?photos:photos.filter(function(p){return p.cat===filter;});
+  grid.innerHTML="";
+  list.forEach(function(p){
+    var card=document.createElement("div");
+    card.className="photo-card";
+    card.innerHTML="<img src='"+p.url+"' alt='"+p.title+"' loading='lazy'><div class='photo-overlay'><span>"+p.title+"</span></div><button class='photo-dl-btn' onclick='event.stopPropagation();openModal(""+p.url+"")'>&#x1F50D; 查看大图</button>";
+    card.onclick=function(){openModal(p.url);};
+    grid.appendChild(card);
+  });
+}
+function filterCat(cat,btn){document.querySelectorAll(".cat-btn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");renderPhotos(cat);}
+function openModal(url){var img=document.getElementById("modalImg");img.src=url.replace("/800/500","/1920/1200");img.onerror=function(){this.src=url;};document.getElementById("imgModal").classList.add("show");}
+function closeModal(){document.getElementById("imgModal").classList.remove("show");}
+function downloadImg(){window.open(document.getElementById("modalImg").src,"_blank");}
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal();});
+var today=new Date();
+var months=["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+var weekdays=["日","一","二","三","四","五","六"];
+document.getElementById("dateText").textContent=today.getFullYear()+"年"+months[today.getMonth()]+today.getDate()+"日 星期"+weekdays[today.getDay()]+" · 每日精选壁纸";
+renderPhotos("all");
+</script>
+</body>
+</html>
