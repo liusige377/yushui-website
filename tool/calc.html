@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>房贷个税计算器 - 渔水</title>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--gold:#d4a843;--white:#f0f6fc;--text:#c9d1d9;--text2:#8b949e;--green:#3fb950;--font:"PingFang SC","Microsoft YaHei",sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+.back-bar{padding:16px 20px}
+.back-bar a{color:var(--gold);text-decoration:none;font-size:0.9rem}
+.page-header{text-align:center;padding:10px 20px 30px}
+.page-header h1{font-size:clamp(1.5rem,4vw,2rem);color:var(--white);margin-bottom:6px}
+.page-header h1 span{color:var(--gold)}
+.page-header p{color:var(--text2);font-size:0.9rem}
+.calc-container{max-width:700px;margin:0 auto;padding:0 20px 50px}
+.tab-bar{display:flex;gap:10px;margin-bottom:24px}
+.tab-btn{flex:1;padding:12px;background:var(--bg2);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text2);font-size:0.95rem;font-family:inherit;cursor:pointer;transition:all .2s;text-align:center}
+.tab-btn.active{background:var(--gold);color:#1a1000;font-weight:700;border-color:var(--gold)}
+.calc-panel{display:none}
+.calc-panel.active{display:block}
+.input-group{margin-bottom:16px}
+.input-label{display:block;font-size:0.85rem;color:var(--text2);margin-bottom:6px}
+.input-row{display:flex;gap:10px;align-items:center}
+.input-field{flex:1;background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 14px;color:var(--white);font-size:1rem;font-family:inherit;outline:none;transition:border-color .2s}
+.input-field:focus{border-color:var(--gold)}
+.input-unit{color:var(--text2);font-size:0.85rem;white-space:nowrap}
+.calc-btn{width:100%;background:linear-gradient(135deg,var(--gold),#b8922e);color:#1a1000;border:none;padding:15px;font-size:1.05rem;font-weight:700;border-radius:10px;cursor:pointer;font-family:inherit;margin-top:6px;transition:opacity .2s}
+.calc-btn:hover{opacity:0.9}
+.result-card{background:var(--bg2);border:1px solid rgba(212,168,67,0.3);border-radius:14px;padding:24px;margin-top:24px;display:none}
+.result-card.show{display:block;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.result-title{color:var(--gold);font-size:0.9rem;margin-bottom:16px;font-weight:600}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.result-item{background:var(--bg3);border-radius:10px;padding:14px}
+.result-item .ri-label{font-size:0.75rem;color:var(--text2);margin-bottom:4px}
+.result-item .ri-val{font-size:1.15rem;font-weight:700;color:var(--white)}
+.result-item .ri-val.highlight{color:var(--gold)}
+.result-item .ri-val.green{color:var(--green)}
+.result-full{background:var(--bg3);border-radius:10px;padding:16px;margin-top:10px}
+.result-full .rf-label{font-size:0.78rem;color:var(--text2);margin-bottom:6px}
+.result-full .rf-val{font-size:1.05rem;color:var(--white);line-height:1.7}
+.disclaimer{margin-top:20px;padding:14px;background:rgba(255,255,255,0.03);border-radius:10px;color:var(--text2);font-size:0.78rem;line-height:1.6}
+@media(max-width:500px){.result-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="../index.html">&#x2190; 回到首页</a></div>
+<div class="page-header">
+  <h1><span>&#x1F9EA;</span> 房贷个税计算器</h1>
+  <p>计算每月还款金额、利息总额，以及专项附加扣除后的个税</p>
+</div>
+<div class="calc-container">
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-loan" onclick="switchTab('loan')">&#x8D37;&#x6B3E;&#x8BA1;&#x7B97;</button>
+    <button class="tab-btn" id="tab-tax" onclick="switchTab('tax')">&#x4E2A;&#x7A33;&#x8BA1;&#x7B97;</button>
+  </div>
+  <div class="calc-panel active" id="panel-loan">
+    <div class="input-group"><label class="input-label">&#x8D37;&#x6B3E;&#x91D1;&#x989D;&#xFF08;&#x4E07;&#x5143;&#xFF09;</label><div class="input-row"><input class="input-field" id="loanAmount" type="number" value="100" min="1" max="10000"><span class="input-unit">&#x4E07;&#x5143;</span></div></div>
+    <div class="input-group"><label class="input-label">&#x8D37;&#x6B3E;&#x671F;&#x9650;</label><div class="input-row"><input class="input-field" id="loanYears" type="number" value="30" min="1" max="40"><span class="input-unit">&#x5E74;</span></div></div>
+    <div class="input-group"><label class="input-label">&#x5E74;&#x5229;&#x7387;&#xFF08;LPR&#xFF09;</label><div class="input-row"><input class="input-field" id="loanRate" type="number" value="3.6" min="1" max="10" step="0.01"><span class="input-unit">%</span></div></div>
+    <div class="input-group"><label class="input-label">&#x8FD8;&#x6B3E;&#x65B9;&#x5F0F;</label><div class="input-row" style="gap:6px"><button class="tab-btn active" id="typeEqual" onclick="setLoanType('equal')" style="font-size:0.85rem;padding:10px">&#x7B49;&#x989D;&#x672C;&#x606F;</button><button class="tab-btn" id="typeEqualP" onclick="setLoanType('equalP')" style="font-size:0.85rem;padding:10px">&#x7B49;&#x989D;&#x672C;&#x91D1;</button></div></div>
+    <button class="calc-btn" onclick="calcLoan()">&#x8BA1;&#x7B97;</button>
+    <div class="result-card" id="loanResult">
+      <div class="result-title">&#x1F4CA; &#x8BA1;&#x7B97;&#x7ED3;&#x679C;</div>
+      <div class="result-grid">
+        <div class="result-item"><div class="ri-label">&#x6BCF;&#x6708;&#x8FD8;&#x6B3E;</div><div class="ri-val highlight" id="lrMonthly">&#x2014;</div></div>
+        <div class="result-item"><div class="ri-label">&#x5229;&#x606F;&#x603B;&#x989D;</div><div class="ri-val" id="lrTotalInterest">&#x2014;</div></div>
+        <div class="result-item"><div class="ri-label">&#x8FD8;&#x6B3E;&#x603B;&#x989D;</div><div class="ri-val" id="lrTotal">&#x2014;</div></div>
+        <div class="result-item"><div class="ri-label">&#x9996;&#x6708;&#x672C;&#x91D1;</div><div class="ri-val green" id="lrFirstP">&#x2014;</div></div>
+      </div>
+      <div class="result-full"><div class="rf-label">&#x1F4CB; &#x7B2C;1&#x6708;&#xFF1A;&#x672C;&#x91D1;+&#x5229;&#x606F;=?</div><div class="rf-val" id="lrDetail">&#x2014;</div></div>
+    </div>
+    <div class="disclaimer">&#x26A0; &#x8BA1;&#x7B97;&#x7ED3;&#x679C;&#x4EC5;&#x4F9B;&#x53C2;&#x8003;&#xFF0C;&#x5B9F;&#x9645;&#x8FD8;&#x6B3E;&#x4EE5;&#x94F6;&#x884C;&#x5408;&#x540C;&#x4E3A;&#x51C6;&#x3002;</div>
+  </div>
+  <div class="calc-panel" id="panel-tax">
+    <div class="input-group"><label class="input-label">&#x7A0E;&#x524D;&#x6708;&#x85AA;&#xFF08;&#x5143;&#xFF09;</label><input class="input-field" id="taxSalary" type="number" value="15000" min="0"></div>
+    <div class="input-group"><label class="input-label">&#x4E94;&#x9669;&#x4E00;&#x91D1;&#x6BD4;&#x4F8B;&#xFF08;&#x9ED8;&#x8BA410.5%&#xFF09;</label><div class="input-row"><input class="input-field" id="taxInsurance" type="number" value="10.5" min="0" max="50" step="0.1"><span class="input-unit">%</span></div></div>
+    <div class="input-group"><label class="input-label">&#x516C;&#x79EF;&#x91D1;&#x6BD4;&#x4F8B;&#xFF08;&#x9ED8;&#x8BA412%&#xFF09;</label><div class="input-row"><input class="input-field" id="taxHousing" type="number" value="12" min="0" max="24" step="0.1"><span class="input-unit">%</span></div></div>
+    <div class="input-group"><label class="input-label">&#x4E13;&#x9879;&#x964D;&#x964D;&#x62D3;&#x9664;&#xFF08;&#x6BCF;&#x6708;&#xFF09;</label><div class="input-row"><input class="input-field" id="taxDeduction" type="number" value="2000" min="0"><span class="input-unit">&#x5143;</span></div></div>
+    <div class="input-group"><label class="input-label">&#x662F;&#x5426;&#x6709;&#x8BAE;&#x6237;&#x4E13;&#x9879;&#xFF08;&#x6BCF;&#x6708;&#xFF09;</label><div class="input-row" style="gap:6px"><button class="tab-btn active" id="hasLoanYes" onclick="setHasLoan(true)" style="font-size:0.85rem;padding:10px">&#x6709;&#xFF08;1000&#x5143;/&#x6708;&#xFF09;</button><button class="tab-btn" id="hasLoanNo" onclick="setHasLoan(false)" style="font-size:0.85rem;padding:10px">&#x65E0;</button></div></div>
+    <button class="calc-btn" onclick="calcTax()">&#x8BA1;&#x7B97;</button>
+    <div class="result-card" id="taxResult">
+      <div class="result-title">&#x1F4CA; &#x7A0E;&#x540E;&#x6536;&#x5165;&#x660E;&#x7EC6;</div>
+      <div class="result-grid">
+        <div class="result-item"><div class="ri-label">&#x7A0E;&#x524D;&#x6708;&#x85AA;</div><div class="ri-val" id="trGross">&#x2014;</div></div>
+        <div class="result-item"><div class="ri-label">&#x4E94;&#x9669;&#x4E00;&#x91D1;</div><div class="ri-val" id="trInsurance">&#x2014;</div></div>
+        <div class="result-item"><div class="ri-label">&#x5E94;&#x7EB3;&#x7A0E;&#x6240;&#x5F97;&#x989D;</div><div class="ri-val highlight" id="trTaxable">&#x2014;</div></div>
+        <div class="result-item"><div class="ri-label">&#x6708;&#x5EA6;&#x4E2A;&#x7A0E;</div><div class="ri-val green" id="trTax">&#x2014;</div></div>
+      </div>
+      <div class="result-full"><div class="rf-label">&#x1F4B0; &#x6708;&#x5EA6;&#x6536;&#x5165;&#x660E;&#x7EC6;</div><div class="rf-val" id="trDetail">&#x2014;</div></div>
+    </div>
+    <div class="disclaimer">&#x26A0; &#x4E2A;&#x7A0E;&#x8BA1;&#x7B97;&#x6309;2019&#x5E74;&#x6807;&#x51C6;&#xFF0C;&#x8D77;&#x5F81;&#x70B9;5000&#x5143;/&#x6708;&#xFF0C;&#x4E03;&#x7EA7;&#x8D85;&#x989D;&#x7D2F;&#x8FDB;&#x7A0E;&#x7387;&#x3002;&#x4EC5;&#x4F9B;&#x53C2;&#x8003;&#x3002;</div>
+  </div>
+</div>
+<script>
+var loanType="equal";var hasLoan=true;
+function switchTab(tab){document.getElementById("tab-loan").classList.toggle("active",tab=="loan");document.getElementById("tab-tax").classList.toggle("active",tab=="tax");document.getElementById("panel-loan").classList.toggle("active",tab=="loan");document.getElementById("panel-tax").classList.toggle("active",tab=="tax");}
+function setLoanType(t){loanType=t;document.getElementById("typeEqual").classList.toggle("active",t=="equal");document.getElementById("typeEqualP").classList.toggle("active",t=="equalP");}
+function setHasLoan(v){hasLoan=v;document.getElementById("hasLoanYes").classList.toggle("active",v);document.getElementById("hasLoanNo").classList.toggle("active",!v);}
+function fi(n){return Math.round(n).toLocaleString("zh-CN");}
+function calcLoan(){var amount=parseFloat(document.getElementById("loanAmount").value)*10000;var years=parseInt(document.getElementById("loanYears").value);var annualRate=parseFloat(document.getElementById("loanRate").value)/100;var mr=annualRate/12;var months=years*12;var monthly,totalInterest,totalPaid,firstP,detail="";if(loanType==="equal"){monthly=amount*mr*Math.pow(1+mr,months)/(Math.pow(1+mr,months)-1);totalPaid=monthly*months;totalInterest=totalPaid-amount;firstP=monthly-amount*mr;detail="&#x7B2C;1&#x6708;&#xFF1A;&#x672C;&#x91D1;"+fi(firstP)+"&#x5143; + &#x5229;&#x606F;"+fi(amount*mr)+"&#x5143; = &#x6708;&#x4ED8;"+fi(monthly)+"&#x5143;";}else{var principal=amount/months;firstP=principal;var firstInterest=amount*mr;monthly=principal+firstInterest;totalInterest=(amount*mr*(months+1))/2;totalPaid=amount+totalInterest;detail="&#x7B2C;1&#x6708;&#xFF1A;&#x672C;&#x91D1;"+fi(principal)+"&#x5143; + &#x5229;&#x606F;"+fi(firstInterest)+"&#x5143; = &#x6708;&#x4ED8;"+fi(monthly)+"&#x5143;\n&#x6700;&#x540E;&#x6708;&#xFF1A;&#x5229;&#x606F;&#x7EA6;"+fi(amount/months*mr)+"&#x5143;";}document.getElementById("lrMonthly").textContent=fi(monthly)+" &#x5143;";document.getElementById("lrTotalInterest").textContent=fi(totalInterest)+" &#x5143;";document.getElementById("lrTotal").textContent=fi(totalPaid)+" &#x5143;";document.getElementById("lrFirstP").textContent=fi(firstP)+" &#x5143;";document.getElementById("lrDetail").textContent=detail;document.getElementById("loanResult").classList.add("show");}
+function getTaxRate(income){if(income<=3000)return{rate:0.03,deduct:0};if(income<=12000)return{rate:0.10,deduct:210};if(income<=25000)return{rate:0.20,deduct:1410};if(income<=35000)return{rate:0.25,deduct:2660};if(income<=55000)return{rate:0.30,deduct:4410};if(income<=80000)return{rate:0.35,deduct:7160};return{rate:0.45,deduct:15160};}
+function calcTax(){var salary=parseFloat(document.getElementById("taxSalary").value);var insRate=parseFloat(document.getElementById("taxInsurance").value)/100;var houseRate=parseFloat(document.getElementById("taxHousing").value)/100;var deduction=parseFloat(document.getElementById("taxDeduction").value)||0;var loanDeduct=hasLoan?1000:0;var insurance=salary*insRate;var housing=salary*houseRate;var totalDeduct=insurance+housing+deduction+loanDeduct;var taxable=Math.max(0,salary-totalDeduct-5000);var t=getTaxRate(taxable);var monthlyTax=Math.max(0,taxable*t.rate-t.deduct);var netIncome=salary-insurance-housing-monthlyTax;document.getElementById("trGross").textContent=fi(salary)+" &#x5143;";document.getElementById("trInsurance").textContent=fi(insurance+housing)+" &#x5143;";document.getElementById("trTaxable").textContent=fi(taxable)+" &#x5143;";document.getElementById("trTax").textContent=fi(monthlyTax)+" &#x5143;";document.getElementById("trDetail").innerHTML="&#x7A0E;&#x524D;&#x6708;&#x85AA;&#xFF1A;"+fi(salary)+"&#x5143;\n&#x4E94;&#x9669;&#x4E00;&#x91D1;&#xFF1A;-"+fi(insurance+housing)+"&#x5143;\n&#x4E13;&#x9879;&#x964D;&#x964D;&#x9664;&#xFF1A;-"+fi(deduction+loanDeduct)+"&#x5143;\n&#x8D77;&#x5F81;&#x70B9;&#xFF1A;-5000&#x5143;\n&#x5E94;&#x7EB3;&#x7A0E;&#x6240;&#x5F97;&#x989D;&#xFF1A;"+fi(taxable)+"&#x5143;\n&#x6708;&#x5EA6;&#x4E2A;&#x7A0E;&#xFF1A;-"+fi(monthlyTax)+"&#x5143;\n<strong style="color:#3fb950">&#x7A0E;&#x540E;&#x6708;&#x85AA;&#xFF1A;"+fi(netIncome)+"&#x5143;</strong>";document.getElementById("taxResult").classList.add("show");}
+</script>
+</body>
+</html>
